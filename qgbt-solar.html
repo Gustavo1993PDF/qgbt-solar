@@ -1,0 +1,390 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="description" content="Estudo preliminar de QGBT monofásico, bifásico ou trifásico com geração solar e banco de capacitores.">
+  <title>QGBT Solar — Estudo e diagrama unifilar</title>
+  <style>
+    :root {
+      --ink: #12212c; --muted: #63727c; --paper: #f5f7f5; --panel: #fff;
+      --line: #d9e0dc; --green: #166b52; --green-2: #23916d; --lime: #c9ef61;
+      --blue: #28688f; --red: #c4433c; --amber: #c87d18; --shadow: 0 18px 42px rgba(26,45,38,.08);
+      --l1: #c43f38; --l2: #242c33; --l3: #2f6690; --n: #3e83b9; --pe: #4e8b42;
+    }
+    * { box-sizing: border-box; }
+    html { scroll-behavior: smooth; }
+    body { margin: 0; color: var(--ink); background: var(--paper); font: 15px/1.55 Inter, ui-sans-serif, system-ui, -apple-system, Segoe UI, sans-serif; }
+    button, input, select { font: inherit; }
+    button { cursor: pointer; }
+    .shell { width: min(1440px, calc(100% - 40px)); margin: auto; }
+    .topbar { position: sticky; top: 0; z-index: 30; color: #eefbf6; background: rgba(13,37,31,.94); backdrop-filter: blur(14px); border-bottom: 1px solid rgba(255,255,255,.08); }
+    .topbar .shell { min-height: 66px; display: flex; align-items: center; gap: 28px; }
+    .brand { display: flex; align-items: center; gap: 12px; font-weight: 760; letter-spacing: -.02em; white-space: nowrap; }
+    .brand-mark { width: 34px; height: 34px; border: 1px solid rgba(255,255,255,.25); border-radius: 10px; display: grid; place-items: center; color: var(--lime); }
+    .brand small { display:block; margin-top:-4px; color:#9eb5ab; font-size:10px; font-weight:600; letter-spacing:.12em; text-transform:uppercase; }
+    nav { display:flex; gap: 5px; margin-left:auto; }
+    nav a { color:#bdd0c8; text-decoration:none; padding:8px 10px; border-radius:8px; font-size:13px; }
+    nav a:hover { color:#fff; background:rgba(255,255,255,.08); }
+    .toolbar { display:flex; gap:8px; }
+    .btn { border:1px solid var(--line); border-radius:10px; background:#fff; color:var(--ink); padding:9px 13px; font-weight:700; font-size:13px; transition:.2s; }
+    .btn:hover { transform:translateY(-1px); box-shadow:0 6px 18px rgba(20,50,40,.1); }
+    .btn.primary { color:#0d2a20; background:var(--lime); border-color:var(--lime); }
+    .btn.ghost { color:#dcebe5; background:transparent; border-color:rgba(255,255,255,.18); }
+    .hero { color:#fff; background:linear-gradient(120deg,#0d2a20 0%,#164b3c 58%,#1c634f 100%); overflow:hidden; }
+    .hero .shell { min-height:390px; display:grid; grid-template-columns:1.2fr .8fr; gap:70px; align-items:center; position:relative; padding-block:56px; }
+    .hero .shell::after { content:""; position:absolute; width:540px; height:540px; right:-180px; top:-240px; border:1px solid rgba(201,239,97,.22); border-radius:50%; box-shadow:0 0 0 78px rgba(201,239,97,.035),0 0 0 156px rgba(201,239,97,.025); }
+    .eyebrow { display:flex; align-items:center; gap:9px; color:var(--lime); text-transform:uppercase; letter-spacing:.14em; font-size:11px; font-weight:800; }
+    .eyebrow::before { content:""; width:26px; height:2px; background:currentColor; }
+    h1 { max-width:760px; margin:16px 0 18px; font-size:clamp(38px,5vw,72px); line-height:.98; letter-spacing:-.055em; font-weight:740; }
+    .hero p { max-width:660px; margin:0; color:#bfd1c9; font-size:17px; }
+    .hero-note { justify-self:end; width:min(100%,390px); padding:24px; background:rgba(255,255,255,.08); border:1px solid rgba(255,255,255,.15); border-radius:18px; position:relative; z-index:1; }
+    .hero-note .status { display:inline-flex; align-items:center; gap:8px; color:#dcf9ee; font-size:12px; font-weight:700; }
+    .dot { width:8px; height:8px; border-radius:50%; background:var(--lime); box-shadow:0 0 0 5px rgba(201,239,97,.12); }
+    .hero-metric { display:grid; grid-template-columns:1fr 1fr; gap:12px; margin-top:20px; }
+    .hero-metric div { padding-top:12px; border-top:1px solid rgba(255,255,255,.14); }
+    .hero-metric strong { display:block; font-size:24px; letter-spacing:-.04em; }
+    .hero-metric span { color:#9fb9ae; font-size:11px; text-transform:uppercase; letter-spacing:.08em; }
+    main { padding-block:32px 70px; }
+    .kpis { display:grid; grid-template-columns:repeat(4,1fr); gap:14px; margin-top:-64px; position:relative; z-index:4; }
+    .kpi { min-height:128px; padding:20px; background:#fff; border:1px solid rgba(20,45,38,.08); border-radius:16px; box-shadow:var(--shadow); }
+    .kpi-label { color:var(--muted); text-transform:uppercase; letter-spacing:.09em; font-size:10px; font-weight:800; }
+    .kpi strong { display:block; margin-top:11px; font-size:30px; line-height:1; letter-spacing:-.045em; }
+    .kpi small { display:block; margin-top:8px; color:var(--muted); }
+    .good { color:var(--green); }
+    .section { margin-top:34px; scroll-margin-top:88px; }
+    .section-head { display:flex; justify-content:space-between; gap:24px; align-items:end; margin-bottom:15px; }
+    .section-title h2 { margin:4px 0 0; font-size:27px; line-height:1.15; letter-spacing:-.035em; }
+    .section-title p { margin:6px 0 0; color:var(--muted); }
+    .section-index { color:var(--green-2); font:800 11px/1 monospace; letter-spacing:.13em; }
+    .panel { background:var(--panel); border:1px solid var(--line); border-radius:18px; box-shadow:0 8px 28px rgba(29,44,38,.04); }
+    .calc-layout { display:grid; grid-template-columns:360px 1fr; overflow:hidden; }
+    .inputs { padding:24px; border-right:1px solid var(--line); background:#fbfcfb; }
+    .input-group + .input-group { margin-top:23px; padding-top:21px; border-top:1px solid var(--line); }
+    .input-group h3 { margin:0 0 13px; font-size:14px; }
+    .field-grid { display:grid; grid-template-columns:1fr 1fr; gap:12px; }
+    label { color:var(--muted); font-size:11px; font-weight:750; text-transform:uppercase; letter-spacing:.055em; }
+    .field { position:relative; margin-top:5px; }
+    .field input, .field select { width:100%; height:42px; color:var(--ink); background:#fff; border:1px solid #cfd8d3; border-radius:9px; padding:0 42px 0 11px; outline:none; font-weight:700; }
+    .field input:focus, .field select:focus { border-color:var(--green-2); box-shadow:0 0 0 3px rgba(35,145,109,.12); }
+    .unit { position:absolute; right:11px; top:50%; transform:translateY(-50%); color:#829087; font-size:11px; pointer-events:none; }
+    .results { padding:24px; }
+    .results-grid { display:grid; grid-template-columns:repeat(3,1fr); gap:12px; }
+    .result-card { min-height:126px; padding:17px; border:1px solid var(--line); border-radius:13px; background:#fff; }
+    .result-card.accent { color:#eafff7; background:var(--green); border-color:var(--green); }
+    .result-card .tag { color:var(--muted); text-transform:uppercase; letter-spacing:.08em; font-size:10px; font-weight:800; }
+    .result-card.accent .tag { color:#aee1cf; }
+    .result-card strong { display:block; margin:12px 0 5px; font-size:27px; line-height:1; letter-spacing:-.04em; }
+    .result-card p { margin:0; color:var(--muted); font-size:12px; }
+    .result-card.accent p { color:#c5e7dc; }
+    .formula { margin-top:14px; padding:13px 15px; color:#4a5a52; background:#f3f6f4; border-left:3px solid var(--green-2); border-radius:0 9px 9px 0; font:13px/1.5 ui-monospace,SFMono-Regular,Consolas,monospace; }
+    .diagram-panel { padding:18px; overflow:hidden; }
+    .diagram-tools { display:flex; align-items:center; justify-content:space-between; gap:20px; padding:2px 4px 15px; }
+    .legend { display:flex; flex-wrap:wrap; gap:15px; color:var(--muted); font-size:11px; font-weight:700; }
+    .legend i { display:inline-block; width:17px; height:3px; border-radius:2px; margin-right:5px; vertical-align:middle; }
+    .diagram-scroll { overflow-x:auto; border:1px solid #dce3df; border-radius:13px; background-color:#f9fbfa; background-image:linear-gradient(rgba(28,70,56,.035) 1px,transparent 1px),linear-gradient(90deg,rgba(28,70,56,.035) 1px,transparent 1px); background-size:20px 20px; }
+    svg { display:block; min-width:1050px; width:100%; height:auto; }
+    .wire { fill:none; stroke:#52625a; stroke-width:3; stroke-linecap:round; stroke-linejoin:round; }
+    .wire.solar { stroke:#d09427; } .wire.cap { stroke:#406f99; } .wire.earth { stroke:#4e8b42; stroke-dasharray:7 5; }
+    .bus { stroke:#173f33; stroke-width:9; stroke-linecap:round; }
+    .node { fill:#fff; stroke:#b9c7c0; stroke-width:1.5; filter:url(#softShadow); }
+    .node-head { fill:#e8f3ed; } .node-head.solar { fill:#fff1cf; } .node-head.cap { fill:#e7f0f8; }
+    .svg-title { fill:#18352c; font-size:13px; font-weight:800; text-anchor:middle; }
+    .svg-sub { fill:#617168; font-size:10px; text-anchor:middle; }
+    .svg-value { fill:#166b52; font-size:10px; font-weight:800; text-anchor:middle; }
+    .flow { stroke-dasharray:6 8; animation:dash 1.4s linear infinite; }
+    @keyframes dash { to { stroke-dashoffset:-28; } }
+    .diagram-caption { display:flex; justify-content:space-between; gap:18px; padding:12px 5px 0; color:var(--muted); font-size:11px; }
+    .circuits-wrap { overflow-x:auto; }
+    table { width:100%; border-collapse:collapse; }
+    th { color:var(--muted); background:#f7f9f8; text-align:left; text-transform:uppercase; letter-spacing:.075em; font-size:10px; padding:12px 14px; border-bottom:1px solid var(--line); }
+    td { padding:11px 14px; border-bottom:1px solid #e8ecea; vertical-align:middle; }
+    tr:last-child td { border-bottom:0; }
+    td input, td select { width:100%; min-width:70px; padding:7px 8px; border:1px solid transparent; background:transparent; border-radius:7px; color:var(--ink); }
+    td input:focus, td select:focus { outline:0; border-color:#b7c8bf; background:#fff; }
+    .phase { display:inline-grid; place-items:center; width:27px; height:27px; color:#fff; border-radius:7px; font-size:10px; font-weight:900; }
+    .phase.L1 { background:var(--l1); } .phase.L2 { background:var(--l2); } .phase.L3 { background:var(--l3); } .phase.T { background:var(--green); }
+    .remove { width:28px; height:28px; border:0; border-radius:7px; color:#9b4e48; background:#fbefed; font-size:18px; line-height:1; }
+    .table-foot { display:flex; justify-content:space-between; align-items:center; gap:14px; padding:14px; border-top:1px solid var(--line); }
+    .balance { display:flex; gap:18px; color:var(--muted); font-size:12px; }
+    .balance strong { color:var(--ink); }
+    .docs-grid { display:grid; grid-template-columns:1.15fr .85fr; gap:16px; }
+    .checklist { padding:8px 20px; }
+    .check { display:flex; align-items:flex-start; gap:12px; padding:13px 3px; border-bottom:1px solid #e9edeb; cursor:pointer; }
+    .check:last-child { border-bottom:0; }
+    .check input { appearance:none; width:20px; height:20px; flex:0 0 auto; margin:1px 0 0; border:1.5px solid #9caaa3; border-radius:6px; display:grid; place-content:center; }
+    .check input::before { content:"✓"; color:#fff; font-weight:900; transform:scale(0); transition:.12s; }
+    .check input:checked { background:var(--green-2); border-color:var(--green-2); }
+    .check input:checked::before { transform:scale(1); }
+    .check span { color:#35463e; }
+    .refs { padding:22px; }
+    .refs h3 { margin:0 0 13px; }
+    .ref { display:flex; gap:12px; padding:12px 0; border-bottom:1px solid #e6ebe8; }
+    .ref:last-of-type { border-bottom:0; }
+    .ref b { display:grid; place-items:center; flex:0 0 37px; height:37px; color:var(--green); background:#e9f4ef; border-radius:9px; font-size:10px; }
+    .ref strong { display:block; font-size:13px; } .ref small { color:var(--muted); }
+    .warning { margin-top:15px; padding:14px; color:#73551e; background:#fff7e6; border:1px solid #f2d99c; border-radius:10px; font-size:12px; }
+    footer { padding:24px 0 45px; color:var(--muted); border-top:1px solid var(--line); font-size:12px; }
+    footer .shell { display:flex; justify-content:space-between; gap:20px; }
+    .toast { position:fixed; right:22px; bottom:22px; z-index:50; padding:12px 16px; color:#fff; background:#163d31; border-radius:10px; box-shadow:0 14px 34px rgba(0,0,0,.2); transform:translateY(20px); opacity:0; pointer-events:none; transition:.25s; }
+    .toast.show { transform:none; opacity:1; }
+    @media (max-width:980px) { nav{display:none}.hero .shell{grid-template-columns:1fr}.hero-note{justify-self:start}.kpis{grid-template-columns:1fr 1fr}.calc-layout{grid-template-columns:1fr}.inputs{border-right:0;border-bottom:1px solid var(--line)}.docs-grid{grid-template-columns:1fr}.results-grid{grid-template-columns:1fr 1fr} }
+    @media (max-width:620px) { .shell{width:min(100% - 24px,1440px)}.toolbar .ghost{display:none}.hero .shell{padding-block:40px 85px}.hero-note{display:none}.kpis{grid-template-columns:1fr 1fr;gap:9px}.kpi{min-height:108px;padding:15px}.kpi strong{font-size:24px}.field-grid,.results-grid{grid-template-columns:1fr}.section-head{align-items:start;flex-direction:column}.diagram-tools,.table-foot,footer .shell{align-items:flex-start;flex-direction:column}.balance{flex-wrap:wrap}.brand small{display:none} }
+    .report-only { display:none; }
+    @page { size:A4 landscape; margin:7mm; }
+    @media print {
+      html,body{font-size:9px;line-height:1.28;background:#fff!important;color:#17231f}
+      *{-webkit-print-color-adjust:exact!important;print-color-adjust:exact!important;animation:none!important;box-shadow:none!important}
+      .topbar,.toolbar,.btn,.remove,.toast,.section-title p,#documentos,.table-foot small{display:none!important}
+      .report-only{display:flex!important}.report-head{align-items:center;justify-content:space-between;gap:18px;padding:0 0 5mm;border-bottom:2px solid #1d7659}.report-head strong{display:block;color:#174e3d;font-size:15px}.report-head span{display:block;color:#66736d;font-size:8px}.report-head-meta{display:grid;grid-template-columns:repeat(3,auto);gap:6mm;text-align:right}.report-head-meta b{display:block;color:#183f33;font-size:10px}
+      .hero{margin-top:4mm;background:#173f33!important}.hero .shell{min-height:auto;padding:7mm 8mm;grid-template-columns:1fr}.hero h1{margin:1mm 0;font-size:27px}.hero p{max-width:none;margin:0;font-size:9px}.hero-note{display:none}.eyebrow{font-size:8px}
+      .shell{width:100%;max-width:none}.kpis{grid-template-columns:repeat(4,1fr);gap:2mm;margin-top:3mm}.kpi{min-height:0;padding:3mm;border:1px solid #d7dfdb}.kpi strong{font-size:16px}.kpi small{margin-top:1mm;font-size:7px}
+      main{padding-bottom:0}.section{padding:4mm 0;break-inside:auto}.section-head{margin-bottom:2mm}.section-index{font-size:7px}.section-title h2{font-size:16px}.panel{border:1px solid #d8dfdc;border-radius:3px}.calc-layout{display:block}.calc-layout>.inputs{display:none!important}.results{padding:3mm}.results-grid{grid-template-columns:repeat(4,1fr);gap:2mm}.result-card{min-height:0;padding:3mm}.result-card strong{font-size:15px}.result-card p{margin-top:1mm;font-size:7px}
+      table{font-size:7px}th,td{padding:1.5mm 1mm}input,select{border:0!important;background:transparent!important;padding:0!important;height:auto!important;color:#17231f!important}.circuits-wrap{overflow:visible}.balance{gap:2mm;padding:2mm}.balance span{padding:1mm 2mm}
+      footer{padding:4mm 0;font-size:7px}.print-break-before{break-before:page}.print-avoid{break-inside:avoid}
+    }
+  </style>
+</head>
+<body>
+  <header class="topbar">
+    <div class="shell">
+      <div class="brand"><span class="brand-mark">ϟ</span><span>QGBT Solar<small>Estudo preliminar</small></span></div>
+      <nav><a href="#calculos">Cálculos</a><a href="#unifilar">Unifilar</a><a href="#circuitos">Circuitos</a><a href="#documentos">Documentação</a></nav>
+      <div class="toolbar"><button class="btn ghost" id="saveBtn">Salvar</button><button class="btn primary" id="reportBtn">Gerar relatório</button></div>
+    </div>
+  </header>
+
+  <section class="report-only report-head" aria-hidden="true">
+    <div><strong>Relatório preliminar · QGBT Solar</strong><span>Unifilar, cargas, geração fotovoltaica, banco de capacitores, BESS, SPDA e cabos</span></div>
+    <div class="report-head-meta"><div><span>Emissão</span><b id="reportDate">—</b></div><div><span>Fornecimento</span><b id="reportMode">—</b></div><div><span>Projeto</span><b>Estudo automático</b></div></div>
+  </section>
+
+  <section class="hero">
+    <div class="shell">
+      <div>
+        <div class="eyebrow" id="heroEyebrow">QGBT · baixa tensão · trifásico</div>
+        <h1>Energia sob controle.</h1>
+        <p>Diagrama unifilar e pré-dimensionamento integrado para entrada da concessionária, geração fotovoltaica, correção do fator de potência e circuitos de carga.</p>
+      </div>
+      <aside class="hero-note">
+        <span class="status"><i class="dot"></i> Modelo calculado em tempo real</span>
+        <div class="hero-metric"><div><strong id="heroVoltage">380 V</strong><span>Tensão de linha</span></div><div><strong id="heroMode">3F+N+PE</strong><span>Configuração</span></div><div><strong id="heroLoad">100 kW</strong><span>Carga ativa</span></div><div><strong id="heroSolar">50 kWp</strong><span>Geração FV</span></div></div>
+      </aside>
+    </div>
+  </section>
+
+  <main class="shell">
+    <div class="kpis">
+      <article class="kpi"><span class="kpi-label">Corrente da carga</span><strong id="kpiLoad">178,8 A</strong><small id="kpiLoadMode">corrente por fase · sistema trifásico</small></article>
+      <article class="kpi"><span class="kpi-label">Banco calculado</span><strong id="kpiCap">19,4 kVAr</strong><small id="kpiCapAdopt">adoção comercial: 20 kVAr</small></article>
+      <article class="kpi"><span class="kpi-label">Corrente do inversor</span><strong id="kpiInv">76,0 A</strong><small>saída CA em potência nominal</small></article>
+      <article class="kpi"><span class="kpi-label">Fator de potência</span><strong class="good" id="kpiPf">0,92</strong><small id="pfStatus">meta mínima informada atendida</small></article>
+    </div>
+
+    <section class="section" id="calculos">
+      <div class="section-head"><div class="section-title"><span class="section-index">01 / PARÂMETROS</span><h2>Pré-dimensionamento elétrico</h2><p>Altere os dados; resultados, diagrama e recomendações respondem imediatamente.</p></div><button class="btn" id="resetBtn">Restaurar exemplo</button></div>
+      <div class="panel calc-layout">
+        <div class="inputs">
+          <div class="input-group"><h3>Rede e carga</h3><div class="field-grid">
+            <label>Tipo de fornecimento<div class="field"><select id="systemMode"><option value="tri">Trifásico · 3F+N</option><option value="bi">Bifásico · 2F+N</option><option value="mono">Monofásico · F+N</option></select></div></label>
+            <label>Potência ativa<div class="field"><input id="loadPower" type="number" min="0.1" step="0.1" value="100"><span class="unit">kW</span></div></label>
+            <label><span id="voltageLabel">Tensão de linha</span><div class="field"><input id="voltage" type="number" min="100" step="1" value="380"><span class="unit">V</span></div></label>
+            <label>FP inicial<div class="field"><input id="pfInitial" type="number" min="0.1" max="1" step="0.01" value="0.85"></div></label>
+            <label>FP desejado<div class="field"><input id="pfTarget" type="number" min="0.1" max="1" step="0.01" value="0.92"></div></label>
+          </div></div>
+          <div class="input-group"><h3>Geração fotovoltaica</h3><div class="field-grid">
+            <label>Potência FV<div class="field"><input id="solarPower" type="number" min="0" step="0.1" value="50"><span class="unit">kWp</span></div></label>
+            <label>Módulo<div class="field"><input id="modulePower" type="number" min="1" step="1" value="550"><span class="unit">Wp</span></div></label>
+            <label>Voc módulo<div class="field"><input id="voc" type="number" min="1" step="0.1" value="49.5"><span class="unit">V</span></div></label>
+            <label>Vmp módulo<div class="field"><input id="vmp" type="number" min="1" step="0.1" value="41.5"><span class="unit">V</span></div></label>
+            <label>Isc módulo<div class="field"><input id="isc" type="number" min="0.1" step="0.1" value="13.8"><span class="unit">A</span></div></label>
+            <label>Vcc máx. inversor<div class="field"><input id="vdcMax" type="number" min="1" step="1" value="1000"><span class="unit">V</span></div></label>
+            <label>MPPT mínimo<div class="field"><input id="mpptMin" type="number" min="1" step="1" value="200"><span class="unit">V</span></div></label>
+            <label>FP inversor<div class="field"><input id="invPf" type="number" min="0.1" max="1" step="0.01" value="1"></div></label>
+          </div></div>
+        </div>
+        <div class="results">
+          <div class="results-grid">
+            <article class="result-card accent"><span class="tag" id="loadModeTag">Carga trifásica</span><strong id="resLoadCurrent">178,8 A</strong><p id="loadCurrentFormula">I = P / (√3 × V × FP)</p></article>
+            <article class="result-card"><span class="tag">Compensação reativa</span><strong id="resQc">19,4 kVAr</strong><p id="resQcText">banco comercial sugerido: 20 kVAr</p></article>
+            <article class="result-card"><span class="tag">Corrente do banco</span><strong id="resCapCurrent">29,5 A</strong><p id="resCapProtection">projeto: 39,8 A · DJ 40 A</p></article>
+            <article class="result-card"><span class="tag">Arranjo fotovoltaico</span><strong id="resArray">5 × 18</strong><p id="resArrayText">90 módulos · 49,5 kWp</p></article>
+            <article class="result-card"><span class="tag">Janela da string</span><strong id="resString">6–18</strong><p>mínimo MPPT – máximo por tensão CC</p></article>
+            <article class="result-card"><span class="tag">Saída do inversor</span><strong id="resInvCurrent">76,0 A</strong><p id="resInvProtection">disjuntor preliminar: 80 A</p></article>
+          </div>
+          <div class="formula" id="formulaSummary">Qc = 100 × [tan(arccos 0,85) − tan(arccos 0,92)] = 19,4 kVAr</div>
+          <div class="warning">Valores indicativos. Capacidade de condução, queda de tensão, curto-circuito, seletividade, temperatura, agrupamento e recomendações dos fabricantes ainda devem ser verificados pelo responsável técnico.</div>
+        </div>
+      </div>
+    </section>
+
+    <section class="section" id="unifilar">
+      <div class="section-head"><div class="section-title"><span class="section-index">02 / DIAGRAMA</span><h2>Arquitetura unifilar do QGBT</h2><p>Fluxo de potência bidirecional com os subsistemas e proteções essenciais.</p></div></div>
+      <div class="panel diagram-panel">
+        <div class="diagram-tools"><div class="legend"><span><i style="background:#52625a"></i>Rede/cargas</span><span><i style="background:#d09427"></i>Solar</span><span><i style="background:#406f99"></i>Capacitores</span><span><i style="background:#4e8b42"></i>PE/terra</span></div><button class="btn" id="toggleFlow">Pausar fluxo</button></div>
+        <div class="diagram-scroll">
+          <svg viewBox="0 0 1200 650" role="img" aria-labelledby="svgTitle svgDesc">
+            <title id="svgTitle">Diagrama unifilar de quadro geral trifásico</title><desc id="svgDesc">Entrada da concessionária, medição bidirecional, proteção geral, barramento, geração solar, banco de capacitores, DPS, aterramento e circuitos de carga.</desc>
+            <defs><filter id="softShadow" x="-20%" y="-20%" width="140%" height="150%"><feDropShadow dx="0" dy="4" stdDeviation="5" flood-color="#15382e" flood-opacity=".09"/></filter></defs>
+            <path class="wire flow" d="M95 103H208M302 103H415M509 103H578V168"/>
+            <path class="wire" d="M600 224V269"/><path class="bus" d="M130 274H1070"/>
+            <path class="wire solar flow" d="M120 510H210M304 510H394M488 510H555V279"/>
+            <path class="wire cap" d="M925 279V348M925 434V510H1018"/>
+            <path class="wire" d="M235 279V350M405 279V350M575 279V350M745 279V350"/>
+            <path class="wire earth" d="M600 566V605H1045M1045 605v-54M745 436v169"/>
+            <g transform="translate(20 60)"><rect class="node" width="150" height="86" rx="12"/><rect class="node-head" width="150" height="27" rx="12"/><rect fill="#e8f3ed" y="15" width="150" height="12"/><text class="svg-title" x="75" y="19">CONCESSIONÁRIA</text><text class="svg-sub" x="75" y="50">Neoenergia Pernambuco</text><text class="svg-value" x="75" y="70" id="svgGrid">380 V · 3F+N</text></g>
+            <g transform="translate(208 60)"><rect class="node" width="94" height="86" rx="12"/><rect class="node-head" width="94" height="27" rx="12"/><text class="svg-title" x="47" y="19">MEDIÇÃO</text><text class="svg-sub" x="47" y="50">bidirecional</text><text class="svg-value" x="47" y="70">↔ kWh</text></g>
+            <g transform="translate(415 60)"><rect class="node" width="94" height="86" rx="12"/><rect class="node-head" width="94" height="27" rx="12"/><text class="svg-title" x="47" y="19">DJ GERAL</text><text class="svg-sub" x="47" y="50">proteção 3P/4P</text><text class="svg-value" x="47" y="70" id="svgMainBreaker">200 A*</text></g>
+            <g transform="translate(550 168)"><rect class="node" width="100" height="56" rx="10"/><text class="svg-title" x="50" y="23">QGBT</text><text class="svg-sub" x="50" y="42">barramento principal</text></g>
+            <text class="svg-sub" x="600" y="259">BARRAMENTO 3F + N + PE</text>
+            <g transform="translate(183 350)"><rect class="node" width="104" height="86" rx="12"/><rect class="node-head" width="104" height="27" rx="12"/><text class="svg-title" x="52" y="19">CARGAS 01</text><text class="svg-sub" x="52" y="50">iluminação</text><text class="svg-value" x="52" y="70">DJ + DR</text></g>
+            <g transform="translate(353 350)"><rect class="node" width="104" height="86" rx="12"/><rect class="node-head" width="104" height="27" rx="12"/><text class="svg-title" x="52" y="19">CARGAS 02</text><text class="svg-sub" x="52" y="50">tomadas</text><text class="svg-value" x="52" y="70">DJ + DR</text></g>
+            <g transform="translate(523 350)"><rect class="node" width="104" height="86" rx="12"/><rect class="node-head" width="104" height="27" rx="12"/><text class="svg-title" x="52" y="19">CARGAS 03</text><text class="svg-sub" x="52" y="50">motores</text><text class="svg-value" x="52" y="70">DJ / comando</text></g>
+            <g transform="translate(693 350)"><rect class="node" width="104" height="86" rx="12"/><rect class="node-head" width="104" height="27" rx="12"/><text class="svg-title" x="52" y="19">DPS CA</text><text class="svg-sub" x="52" y="50">proteção surtos</text><text class="svg-value" x="52" y="70">→ PE</text></g>
+            <g transform="translate(873 348)"><rect class="node" width="104" height="86" rx="12"/><rect class="node-head cap" width="104" height="27" rx="12"/><text class="svg-title" x="52" y="19">DJ + CONTATOR</text><text class="svg-sub" x="52" y="50">comando por CAFP</text><text class="svg-value" x="52" y="70" id="svgCapBreaker">40 A*</text></g>
+            <g transform="translate(1018 468)"><rect class="node" width="130" height="86" rx="12"/><rect class="node-head cap" width="130" height="27" rx="12"/><text class="svg-title" x="65" y="19">BANCO CAP.</text><text class="svg-sub" x="65" y="50">correção automática</text><text class="svg-value" x="65" y="70" id="svgCap">20 kVAr*</text></g>
+            <g transform="translate(25 468)"><rect class="node" width="95" height="86" rx="12"/><rect class="node-head solar" width="95" height="27" rx="12"/><text class="svg-title" x="47" y="19">ARRANJO FV</text><text class="svg-sub" x="47" y="50" id="svgModules">90 módulos</text><text class="svg-value" x="47" y="70" id="svgSolar">49,5 kWp</text></g>
+            <g transform="translate(210 468)"><rect class="node" width="94" height="86" rx="12"/><rect class="node-head solar" width="94" height="27" rx="12"/><text class="svg-title" x="47" y="19">STRING BOX</text><text class="svg-sub" x="47" y="50">fusíveis + DPS</text><text class="svg-value" x="47" y="70" id="svgFuse">20 A gPV*</text></g>
+            <g transform="translate(394 468)"><rect class="node" width="94" height="86" rx="12"/><rect class="node-head solar" width="94" height="27" rx="12"/><text class="svg-title" x="47" y="19">INVERSOR</text><text class="svg-sub" x="47" y="50" id="svgInvPower">50 kW</text><text class="svg-value" x="47" y="70">CC → CA</text></g>
+            <g transform="translate(555 468)"><rect class="node" width="90" height="86" rx="12"/><rect class="node-head solar" width="90" height="27" rx="12"/><text class="svg-title" x="45" y="19">DJ CA FV</text><text class="svg-sub" x="45" y="50">seccionamento</text><text class="svg-value" x="45" y="70" id="svgInvBreaker">80 A*</text></g>
+            <g transform="translate(535 605)"><path d="M0 0h130M20 9h90M42 18h46" stroke="#4e8b42" stroke-width="3"/><text class="svg-sub" x="65" y="38">MALHA DE ATERRAMENTO / BEP</text></g>
+          </svg>
+        </div>
+        <div class="diagram-caption"><span>* Seleção preliminar sujeita à coordenação, capacidade de interrupção e manual do equipamento.</span><span>Fluxo animado apenas para leitura funcional.</span></div>
+      </div>
+    </section>
+
+    <section class="section" id="circuitos">
+      <div class="section-head"><div class="section-title"><span class="section-index">03 / QUADRO DE CARGAS</span><h2>Circuitos e balanceamento</h2><p>Edite livremente a relação preliminar; os totais por fase são recalculados.</p></div><button class="btn" id="addCircuit">+ Adicionar circuito</button></div>
+      <div class="panel circuits-wrap"><table><thead><tr><th>Circuito</th><th>Descrição</th><th>Fase</th><th>Potência (W)</th><th>Tensão (V)</th><th>FP</th><th>Corrente</th><th>Proteção</th><th></th></tr></thead><tbody id="circuitBody"></tbody></table><div class="table-foot"><div class="balance"><span>L1 <strong id="sumL1">0 A</strong></span><span>L2 <strong id="sumL2">0 A</strong></span><span>L3 <strong id="sumL3">0 A</strong></span><span>Desbalanço <strong id="imbalance">0%</strong></span></div><small>Distribuição indicativa; cargas de 2 ou 3 fases são distribuídas igualmente entre as fases ativas.</small></div></div>
+    </section>
+
+    <section class="section" id="documentos">
+      <div class="section-head"><div class="section-title"><span class="section-index">04 / ENTREGA TÉCNICA</span><h2>Checklist de conformidade</h2><p>Acompanhamento local dos itens apontados no roteiro fornecido.</p></div><span id="checkProgress">0 de 14 concluídos</span></div>
+      <div class="docs-grid">
+        <div class="panel checklist" id="checklist">
+          <label class="check"><input type="checkbox"><span>NBR 5410 e requisitos aplicáveis da NBR 16690 verificados.</span></label>
+          <label class="check"><input type="checkbox"><span>NDU-001 e DIS-NOR-031 conferidas na revisão vigente da Neoenergia.</span></label>
+          <label class="check"><input type="checkbox"><span>Fator de potência no ponto de conexão atende ao limite aplicável.</span></label>
+          <label class="check"><input type="checkbox"><span>ART de projeto e execução registrada no CREA-PE.</span></label>
+          <label class="check"><input type="checkbox"><span>Memorial descritivo e de cálculo concluído.</span></label>
+          <label class="check"><input type="checkbox"><span>Seletividade e capacidade de interrupção das proteções verificadas.</span></label>
+          <label class="check"><input type="checkbox"><span>Aterramento, equipotencialização e DPS dimensionados.</span></label>
+          <label class="check"><input type="checkbox"><span>DR aplicado aos circuitos exigidos e coordenado com o sistema FV.</span></label>
+          <label class="check"><input type="checkbox"><span>Parecer de acesso e medição bidirecional solicitados.</span></label>
+          <label class="check"><input type="checkbox"><span>Comissionamento, ensaios e documentação “como construído” previstos.</span></label>
+          <label class="check"><input type="checkbox"><span>BESS: BMS, limites de série/paralelo, proteção por ramal e seccionamento CC conferidos com o fabricante.</span></label>
+          <label class="check"><input type="checkbox"><span>BESS: segurança, ventilação/controle térmico e exigências do Corpo de Bombeiros local verificadas.</span></label>
+          <label class="check"><input type="checkbox"><span>SPDA: análise de risco conforme ABNT NBR 5419-2:2026 concluída e documentada.</span></label>
+          <label class="check"><input type="checkbox"><span>SPDA: captação, descidas, aterramento, equipotencialização, distância de separação e DPS coordenados.</span></label>
+        </div>
+        <aside class="panel refs"><h3>Referências do roteiro</h3>
+          <div class="ref"><b>NBR</b><div><strong>ABNT NBR 5410</strong><small>Instalações elétricas de baixa tensão</small></div></div>
+          <div class="ref"><b>FV</b><div><strong>ABNT NBR 16690</strong><small>Instalações elétricas de arranjos fotovoltaicos</small></div></div>
+          <div class="ref"><b>ANEEL</b><div><strong>Resolução Normativa nº 1.000/2021</strong><small>Regras de prestação do serviço de distribuição</small></div></div>
+          <div class="ref"><b>NEO</b><div><strong>NDU-001 · DIS-NOR-031</strong><small>Fornecimento BT e conexão de geração distribuída</small></div></div>
+          <div class="ref"><b>NR</b><div><strong>NR-10</strong><small>Segurança em instalações e serviços em eletricidade</small></div></div>
+          <div class="ref"><b>BESS</b><div><strong>ABNT NBR 16976 · IEC 62619 · IEC 62933-5-1</strong><small>Segurança de baterias estacionárias e sistemas de armazenamento</small></div></div>
+          <div class="ref"><b>SPDA</b><div><strong>ABNT NBR 5419:2026 · IEC 62305:2024</strong><small>Risco, proteção externa, equipotencialização e sistemas internos</small></div></div>
+          <div class="warning"><strong>Responsabilidade técnica</strong><br>Este aplicativo é uma ferramenta de estudo. O projeto executivo precisa ser elaborado, conferido e assinado por profissional legalmente habilitado, com ART, e submetido à distribuidora quando aplicável.</div>
+        </aside>
+      </div>
+    </section>
+  </main>
+  <footer><div class="shell"><span>QGBT Solar · estudo preliminar editável</span><span>Dados armazenados somente neste navegador.</span></div></footer>
+  <div class="toast" id="toast">Projeto salvo neste navegador.</div>
+
+  <script>
+    const $ = id => document.getElementById(id);
+    const defaults = {systemMode:'tri',loadPower:100,voltage:380,pfInitial:.85,pfTarget:.92,solarPower:50,modulePower:550,voc:49.5,vmp:41.5,isc:13.8,vdcMax:1000,mpptMin:200,invPf:1};
+    const fields = Object.keys(defaults);
+    const standards = [2,4,6,10,16,20,25,32,40,50,63,80,100,125,160,200,250,315,400,500,630,800,1000,1250];
+    const commercialKvar = [2.5,5,7.5,10,12.5,15,20,25,30,40,50,60,75,100,125,150,200];
+    const num = id => Math.max(0, parseFloat($(id).value) || 0);
+    const br = (n,d=1) => Number.isFinite(n) ? n.toLocaleString('pt-BR',{minimumFractionDigits:d,maximumFractionDigits:d}) : '—';
+    const ceilStd = n => standards.find(x=>x>=n) || Math.ceil(n/100)*100;
+    const ceilKvar = n => n <= 0 ? 0 : (commercialKvar.find(x=>x>=n) || Math.ceil(n/25)*25);
+    const clampPf = n => Math.min(.9999,Math.max(.01,n));
+
+    function calculate(){
+      const P=num('loadPower'), V=Math.max(1,num('voltage')), pfi=clampPf(num('pfInitial')), pft=clampPf(num('pfTarget'));
+      const mode=$('systemMode').value,modeInfo={tri:{label:'Trifásico',conductors:'3F+N+PE',short:'3F+N',voltage:'Tensão de linha',formula:'I = P / (√3 × V × FP)'},bi:{label:'Bifásico',conductors:'2F+N+PE',short:'2F+N',voltage:'Tensão entre fases',formula:'I = P / [2 × (V/√3) × FP]'},mono:{label:'Monofásico',conductors:'F+N+PE',short:'F+N',voltage:'Tensão fase-neutro',formula:'I = P / (V × FP)'}}[mode];
+      const solar=num('solarPower'), modW=Math.max(1,num('modulePower')), voc=Math.max(.1,num('voc')), vmp=Math.max(.1,num('vmp')), isc=num('isc');
+      const imax=Math.max(1,num('vdcMax')), mppt=Math.max(1,num('mpptMin')), invPf=clampPf(num('invPf'));
+      const loadDenominator=mode==='tri'?Math.sqrt(3)*V:mode==='bi'?2*(V/Math.sqrt(3)):V;
+      const loadI=P*1000/(loadDenominator*pfi);
+      const tan1=Math.tan(Math.acos(pfi)), tan2=Math.tan(Math.acos(pft));
+      const qc=Math.max(0,P*(tan1-tan2)), adopted=ceilKvar(qc), ic=adopted*1000/((mode==='tri'?Math.sqrt(3)*V:V)), capDesign=ic*1.5, capBreaker=ceilStd(capDesign);
+      const nsMax=Math.max(1,Math.floor(imax/(voc*1.0675))), nsMin=Math.max(1,Math.ceil(mppt/(vmp*.8425)));
+      const desiredModules=Math.max(0,Math.ceil(solar*1000/modW));
+      let perString=0, strings=0;
+      if(desiredModules&&nsMin<=nsMax){
+        let best=null;
+        for(let ns=nsMin;ns<=nsMax;ns++){
+          const np=Math.ceil(desiredModules/ns), count=ns*np;
+          if(!best||count<best.count||(count===best.count&&np<best.np)) best={ns,np,count};
+        }
+        perString=best.ns;strings=best.np;
+      }
+      const modules=perString*strings, actualSolar=modules*modW/1000;
+      const invI=solar*1000/((mode==='tri'?Math.sqrt(3)*V:V)*invPf), invBreaker=ceilStd(invI), fuse=ceilStd(1.25*isc), mainBreaker=ceilStd(loadI);
+      $('heroVoltage').textContent=`${br(V,0)} V`; $('heroMode').textContent=modeInfo.conductors; $('heroLoad').textContent=`${br(P,0)} kW`; $('heroSolar').textContent=`${br(solar,0)} kWp`;
+      $('voltageLabel').textContent=modeInfo.voltage;$('loadModeTag').textContent=`Carga ${modeInfo.label.toLowerCase()}`;$('loadCurrentFormula').textContent=modeInfo.formula;$('kpiLoadMode').textContent=`corrente de projeto · sistema ${modeInfo.label.toLowerCase()}`;
+      $('heroEyebrow').textContent=`QGBT · baixa tensão · ${modeInfo.label.toLowerCase()}`;const svgHeading=$('svgTitle');if(svgHeading)svgHeading.textContent=`Diagrama unifilar de quadro geral ${modeInfo.label.toLowerCase()}`;      $('kpiLoad').textContent=$('resLoadCurrent').textContent=`${br(loadI)} A`;
+      $('kpiCap').textContent=$('resQc').textContent=`${br(qc)} kVAr`; $('kpiCapAdopt').textContent=`adoção comercial: ${br(adopted,adopted%1?1:0)} kVAr`;
+      $('kpiInv').textContent=$('resInvCurrent').textContent=`${br(invI)} A`; $('kpiPf').textContent=br(pft,2);
+      $('pfStatus').textContent=pft>=.92?'meta mínima informada atendida':'abaixo da meta mínima informada'; $('kpiPf').classList.toggle('good',pft>=.92);
+      $('resQcText').textContent=`banco comercial sugerido: ${br(adopted,adopted%1?1:0)} kVAr`;
+      $('resCapCurrent').textContent=`${br(ic)} A`; $('resCapProtection').textContent=`dimensionamento 1,5×: ${br(capDesign)} A · DJ ${br(capBreaker,0)} A`;
+      $('resArray').textContent=modules?`${strings} × ${perString}`:'—'; $('resArrayText').textContent=`${modules} módulos · ${br(actualSolar)} kWp`;
+      $('resString').textContent=`${nsMin}–${nsMax}`; $('resInvProtection').textContent=`disjuntor preliminar: ${br(invBreaker,0)} A`;
+      $('formulaSummary').textContent=`Qc = ${br(P,1)} × [tan(arccos ${br(pfi,2)}) − tan(arccos ${br(pft,2)})] = ${br(qc)} kVAr`;
+      $('svgGrid').textContent=`${br(V,0)} V · ${modeInfo.short}`; $('svgMainBreaker').textContent=`${br(mainBreaker,0)} A*`; $('svgCapBreaker').textContent=`${br(capBreaker,0)} A*`; $('svgCap').textContent=`${br(adopted,adopted%1?1:0)} kVAr*`;
+      $('svgModules').textContent=`${modules} módulos`; $('svgSolar').textContent=`${br(actualSolar)} kWp`; $('svgFuse').textContent=`${br(fuse,0)} A gPV*`; $('svgInvPower').textContent=`${br(solar,0)} kW`; $('svgInvBreaker').textContent=`${br(invBreaker,0)} A*`;
+    }
+
+    let circuits=[
+      {name:'C01',desc:'Iluminação',phase:'L1',power:1200,voltage:220,pf:.92,breaker:10},
+      {name:'C02',desc:'Tomadas de uso geral',phase:'L2',power:2200,voltage:220,pf:.92,breaker:16},
+      {name:'C03',desc:'Climatização',phase:'L3',power:3500,voltage:220,pf:.90,breaker:20},
+      {name:'C04',desc:'Motor / bomba',phase:'T',power:7500,voltage:380,pf:.86,breaker:20},
+      {name:'C05',desc:'Carga especial',phase:'L1',power:3200,voltage:220,pf:.95,breaker:20}
+    ];
+    function circuitCurrent(c){return c.power/((c.phase==='T'?Math.sqrt(3)*c.voltage:c.voltage)*c.pf)}
+    function activePhases(){return $('systemMode').value==='tri'?['L1','L2','L3']:$('systemMode').value==='bi'?['L1','L2']:['L1']}
+    function phaseOptions(c){
+      const mode=$('systemMode').value,options=mode==='tri'?[['L1','L1'],['L2','L2'],['L3','L3'],['B','2F'],['T','3F']]:mode==='bi'?[['L1','L1'],['L2','L2'],['B','2F']]:[['L1','L1']];
+      return options.map(([value,label])=>`<option value="${value}" ${c.phase===value?'selected':''}>${label}</option>`).join('');
+    }
+    function renderCircuits(){
+      $('circuitBody').innerHTML=circuits.map((c,i)=>`<tr data-i="${i}"><td><input data-k="name" value="${c.name}"></td><td><input data-k="desc" value="${c.desc}"></td><td><select data-k="phase">${phaseOptions(c)}</select></td><td><input data-k="power" type="number" min="0" value="${c.power}"></td><td><input data-k="voltage" type="number" min="1" value="${c.voltage}"></td><td><input data-k="pf" type="number" min=".1" max="1" step=".01" value="${c.pf}"></td><td><strong>${br(circuitCurrent(c))} A</strong></td><td><input data-k="breaker" type="number" min="1" value="${c.breaker}"> A</td><td><button class="remove" data-remove="${i}" aria-label="Remover circuito">×</button></td></tr>`).join('');
+      updateBalance();
+    }
+    function updateBalance(){
+      const active=activePhases(),sums={L1:0,L2:0,L3:0};
+      circuits.forEach(c=>{const I=circuitCurrent(c);if(c.phase==='T')active.forEach(k=>sums[k]+=I);else if(c.phase==='B')active.slice(0,2).forEach(k=>sums[k]+=I);else if(active.includes(c.phase))sums[c.phase]+=I});
+      Object.keys(sums).forEach(k=>$('sum'+k).textContent=active.includes(k)?`${br(sums[k])} A`:'—');
+      const vals=active.map(k=>sums[k]),avg=vals.reduce((a,b)=>a+b,0)/vals.length,imb=avg?((Math.max(...vals)-Math.min(...vals))/avg*100):0;$('imbalance').textContent=`${br(imb)}%`;
+    }
+    function normalizeCircuitsForMode(applyVoltage=true){
+      const mode=$('systemMode').value;
+      if(applyVoltage)$('voltage').value=mode==='tri'?380:220;
+      circuits.forEach(c=>{if(!c.originalPhase)c.originalPhase=c.phase;if(mode==='tri')c.phase=c.originalPhase;else if(mode==='bi'){c.phase=c.originalPhase==='L3'?'L2':c.originalPhase==='T'?'B':c.originalPhase;if(c.voltage===380)c.voltage=220}else{c.phase='L1';if(c.voltage===380)c.voltage=220}});
+      renderCircuits();calculate();
+    }
+    $('circuitBody').addEventListener('change',e=>{const tr=e.target.closest('tr');if(!tr||!e.target.dataset.k)return;const i=+tr.dataset.i,k=e.target.dataset.k;circuits[i][k]=['power','voltage','pf','breaker'].includes(k)?parseFloat(e.target.value)||0:e.target.value;if(k==='phase'&&systemMode.value==='tri')circuits[i].originalPhase=circuits[i].phase;renderCircuits()});
+    $('circuitBody').addEventListener('click',e=>{if(e.target.dataset.remove!==undefined){circuits.splice(+e.target.dataset.remove,1);renderCircuits()}});
+    $('addCircuit').onclick=()=>{const n=circuits.length+1,phases=activePhases();circuits.push({name:`C${String(n).padStart(2,'0')}`,desc:'Novo circuito',phase:phases[(n-1)%phases.length],power:1000,voltage:220,pf:.92,breaker:10});renderCircuits()};
+    $('systemMode').addEventListener('change',()=>{normalizeCircuitsForMode(true);showToast(`Fornecimento alterado para ${$('systemMode').selectedOptions[0].text}.`)});    fields.forEach(id=>$(id).addEventListener('input',calculate));
+    $('resetBtn').onclick=()=>{fields.forEach(id=>$(id).value=defaults[id]);normalizeCircuitsForMode(false);showToast('Valores do exemplo restaurados.')};
+    $('toggleFlow').onclick=()=>{const paused=document.body.classList.toggle('paused');document.querySelectorAll('.flow').forEach(x=>x.style.animationPlayState=paused?'paused':'running');$('toggleFlow').textContent=paused?'Animar fluxo':'Pausar fluxo'};
+    function showToast(msg){$('toast').textContent=msg;$('toast').classList.add('show');setTimeout(()=>$('toast').classList.remove('show'),2200)}
+    function updateChecklist(){const boxes=[...document.querySelectorAll('#checklist input')],done=boxes.filter(x=>x.checked).length;$('checkProgress').textContent=`${done} de ${boxes.length} concluídos`;}
+    document.querySelectorAll('#checklist input').forEach(x=>x.addEventListener('change',updateChecklist));
+    $('saveBtn').onclick=()=>{const data={inputs:Object.fromEntries(fields.map(id=>[id,$(id).value])),circuits,checks:[...document.querySelectorAll('#checklist input')].map(x=>x.checked)};localStorage.setItem('qgbtSolarProject',JSON.stringify(data));showToast('Projeto salvo neste navegador.')};
+    function load(){try{const d=JSON.parse(localStorage.getItem('qgbtSolarProject'));if(!d)return;fields.forEach(id=>{if(d.inputs?.[id]!==undefined)$(id).value=d.inputs[id]});if(Array.isArray(d.circuits))circuits=d.circuits;document.querySelectorAll('#checklist input').forEach((x,i)=>x.checked=!!d.checks?.[i]);}catch(e){console.warn('Dados locais ignorados.',e)}}
+    load(); normalizeCircuitsForMode(false); updateChecklist();
+  </script>
+  <script src="qgbt-simulator.js"></script>
+</body>
+</html>
